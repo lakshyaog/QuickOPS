@@ -1,0 +1,48 @@
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:          # persists DB data across container restarts
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  devboard_net:           # isolated bridge network for the two services
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: devboard_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devboard
+      POSTGRES_PASSWORD: devboard
+      POSTGRES_DB: devboard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # persist data
+    networks:
+      - devboard_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devboard -d devboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── FastAPI backend ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: devboard_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://devboard:devboard@db:5432/devboard
+    networks:
+      - devboard_net
+    depends_on:
+      db:
+        condition: service_healthy   # wait until Postgres is ready
+    volumes:
+      - ./backend/app:/code/app     # live-reload: changes reflect without rebuild
