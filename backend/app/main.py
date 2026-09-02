@@ -1,5 +1,6 @@
 # ── stdlib ────────────────────────────────────────────────────────────────────
 import time
+from contextlib import asynccontextmanager
 from typing import List
 
 # ── third-party ───────────────────────────────────────────────────────────────
@@ -13,13 +14,21 @@ from sqlalchemy.orm import Session
 from .database import Base, engine, get_db
 from . import crud, models, schemas
 
-# Create all tables on startup
-Base.metadata.create_all(bind=engine)
+# ── Lifespan: create tables on startup ────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run startup/shutdown tasks for the application."""
+    # Create DB tables on first boot (idempotent)
+    Base.metadata.create_all(bind=engine)
+    yield
+    # (teardown hooks go here if needed in future)
+
 
 app = FastAPI(
     title="DevBoard — Developer Task Management API",
     description="A simple task management API for developers, backed by PostgreSQL.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
