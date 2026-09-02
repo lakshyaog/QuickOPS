@@ -1,7 +1,9 @@
 # DevBoard — Developer Task Management API
 
-> **Day 1 — Application + Docker**  
-> FastAPI · PostgreSQL · Docker · Docker Compose
+[![CI](https://github.com/<YOUR_USERNAME>/QuickOPS/actions/workflows/ci.yml/badge.svg)](https://github.com/<YOUR_USERNAME>/QuickOPS/actions/workflows/ci.yml)
+
+> **Day 1 — Application + Docker** · **Day 2 — GitHub Actions CI**  
+> FastAPI · PostgreSQL · Docker · Docker Compose · pytest · flake8
 
 ---
 
@@ -111,3 +113,58 @@ docker compose up -d --build backend
 # Open a psql shell in the DB container
 docker exec -it devboard_db psql -U devboard -d devboard
 ```
+
+---
+
+## Day 2 — CI Pipeline
+
+### What runs in GitHub Actions
+
+| Job | Tool | What it checks |
+|-----|------|---------------|
+| `lint` | flake8 | PEP 8 style, unused imports, undefined names |
+| `test` | pytest + coverage | All API routes via in-memory SQLite (no DB needed) |
+| `docker-build` | docker/build-push-action | Dockerfile builds successfully |
+
+All three jobs run **in parallel** on every push and pull request.
+
+### Run tests locally
+
+```bash
+cd backend
+
+# Install dev dependencies (once)
+pip3 install -r requirements-dev.txt
+
+# Run test suite
+pytest tests/ -v
+
+# Run with coverage report
+pytest tests/ --cov=app --cov-report=term-missing
+
+# Lint check
+flake8 app/ --config=setup.cfg
+```
+
+### Project structure (Day 2 additions)
+
+```
+QuickOPS/
+├── .github/
+│   └── workflows/
+│       └── ci.yml              ← GitHub Actions CI pipeline
+└── backend/
+    ├── requirements-dev.txt    ← Dev/test dependencies (not in Docker image)
+    ├── setup.cfg               ← flake8 + pytest configuration
+    └── tests/
+        ├── __init__.py
+        ├── conftest.py         ← SQLite fixtures, TestClient setup
+        └── test_tasks.py       ← Full CRUD test suite (10 tests)
+```
+
+### Protecting `main` (optional)
+
+Go to **Settings → Branches → Add branch protection rule** for `main`:
+- ☑ **Require status checks to pass before merging**
+  - Add: `Lint (flake8)`, `Test (pytest)`, `Docker Build`
+- ☑ **Require branches to be up to date before merging**

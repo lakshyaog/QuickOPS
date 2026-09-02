@@ -2,7 +2,6 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Enum as SAEnum
-from sqlalchemy.sql import text  # re-exported for use in main.py
 
 from .database import Base
 
