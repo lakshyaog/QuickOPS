@@ -129,14 +129,10 @@ def test_delete_task_not_found(client):
     assert response.status_code == 404
 
 
-# ── Intentional failure (CI demo) ──────────────────────────────────────────────
+# ── CI verification demo test ──────────────────────────────────────────────────
 
 def test_broken_intentional():
     """
-    INTENTIONALLY BROKEN — demonstrates CI failure detection.
-    This test will be fixed in the next commit to show the green/red cycle.
-
-    To break CI:  leave `assert 1 == 2` in place and push.
-    To fix CI:    change to `assert True` (or any passing assertion) and push.
+    Fixed CI demo test — now passes cleanly!
     """
-    assert 1 == 2, "This test is intentionally broken to demo CI failure detection!"
+    assert True

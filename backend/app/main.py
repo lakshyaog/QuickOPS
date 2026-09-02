@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 
 # ── local ─────────────────────────────────────────────────────────────────────
 from .database import Base, engine, get_db
-from . import crud, models, schemas
+from . import crud, schemas
+
 
 # ── Lifespan: create tables on startup ────────────────────────────────────────
 @asynccontextmanager
