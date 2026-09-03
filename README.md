@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/<YOUR_USERNAME>/QuickOPS/actions/workflows/ci.yml/badge.svg)](https://github.com/<YOUR_USERNAME>/QuickOPS/actions/workflows/ci.yml)
 
-> **Day 1 — Application + Docker** · **Day 2 — GitHub Actions CI**  
-> FastAPI · PostgreSQL · Docker · Docker Compose · pytest · flake8
+> **Day 1 — Application + Docker** · **Day 2 — GitHub Actions CI** · **Day 3 — Registry + CD**  
+> FastAPI · PostgreSQL · Docker · Docker Compose · pytest · flake8 · GHCR · Trivy
 
 ---
 
@@ -166,5 +166,38 @@ QuickOPS/
 
 Go to **Settings → Branches → Add branch protection rule** for `main`:
 - ☑ **Require status checks to pass before merging**
-  - Add: `Lint (flake8)`, `Test (pytest)`, `Docker Build`
+  - Add: `Lint (flake8)`, `Test (pytest)`, `Build, Scan & Publish (GHCR)`
 - ☑ **Require branches to be up to date before merging**
+
+---
+
+## Day 3 — Registry + CD
+
+### What runs in the CD Pipeline
+
+```
+┌──────────────┐     ┌──────────────┐     ┌────────────────────────────────────────────────────────┐
+│  Lint (app)  │     │  Test (DB)   │     │ Build, Scan & Publish (GHCR)                           │
+│  (flake8)    │ ──► │  (pytest)    │ ──► │ 1. Buildx build                                        │
+│              │     │              │     │ 2. Trivy vulnerability scan (CRITICAL/HIGH)            │
+│              │     │              │     │ 3. Push to ghcr.io with SHA + SemVer tags (on main/v*) │
+└──────────────┘     └──────────────┘     └────────────────────────────────────────────────────────┘
+```
+
+### Key Highlights
+1. **GitHub Container Registry (GHCR)**: Images published to `ghcr.io/<owner>/quickops/backend`.
+2. **Workflow Permissions**: Configured with `packages: write` and `security-events: write`.
+3. **Commit SHA Image Tagging**: Every build produces an immutable `sha-<short_sha>` tag, avoiding the risks of deploying `:latest` in production.
+4. **Trivy Vulnerability Scanner**: Automated container image scanning across OS packages and Python dependencies with SARIF results uploaded to the GitHub Security tab.
+5. **In-Depth Documentation**: See [docs/image-tagging-strategy.md](docs/image-tagging-strategy.md) for tag specifications, rollback strategies, and deployment runbooks.
+
+### Pull & Run from GHCR
+
+```bash
+# Pull by commit SHA (production/staging)
+docker pull ghcr.io/<YOUR_USERNAME>/quickops/backend:sha-<COMMIT_SHA>
+
+# Run image
+docker run -d -p 8000:8000 ghcr.io/<YOUR_USERNAME>/quickops/backend:sha-<COMMIT_SHA>
+```
+
