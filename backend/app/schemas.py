@@ -33,4 +33,3 @@ class TaskOut(BaseModel):
     status: Status
     created_at: datetime
     updated_at: datetime
-

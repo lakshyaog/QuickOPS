@@ -39,4 +39,3 @@ class Task(Base):
         onupdate=utc_now,
         nullable=False,
     )
-
