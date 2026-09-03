@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .models import Priority, Status
 
@@ -8,10 +8,10 @@ from .models import Priority, Status
 # ── Request schemas ─────────────────────────────────────────────────────────
 
 class TaskCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=255, example="Fix login bug")
-    description: Optional[str] = Field(None, example="Users can't log in on Safari")
-    priority: Priority = Field(Priority.medium, example="high")
-    status: Status = Field(Status.todo, example="todo")
+    title: str = Field(..., min_length=1, max_length=255, examples=["Fix login bug"])
+    description: Optional[str] = Field(None, examples=["Users can't log in on Safari"])
+    priority: Priority = Field(Priority.medium, examples=["high"])
+    status: Status = Field(Status.todo, examples=["todo"])
 
 
 class TaskUpdate(BaseModel):
@@ -24,6 +24,8 @@ class TaskUpdate(BaseModel):
 # ── Response schemas ─────────────────────────────────────────────────────────
 
 class TaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     title: str
     description: Optional[str]
@@ -32,5 +34,3 @@ class TaskOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True

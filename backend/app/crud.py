@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -33,7 +33,7 @@ def update_task(
     for key, value in update_data.items():
         setattr(db_task, key, value)
 
-    db_task.updated_at = datetime.utcnow()
+    db_task.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(db_task)
     return db_task
