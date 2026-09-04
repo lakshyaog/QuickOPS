@@ -2,8 +2,8 @@
 
 [![CI](https://github.com/<YOUR_USERNAME>/QuickOPS/actions/workflows/ci.yml/badge.svg)](https://github.com/<YOUR_USERNAME>/QuickOPS/actions/workflows/ci.yml)
 
-> **Day 1 — Application + Docker** · **Day 2 — GitHub Actions CI** · **Day 3 — Registry + CD**  
-> FastAPI · PostgreSQL · Docker · Docker Compose · pytest · flake8 · GHCR · Trivy
+> **Day 1 — Application + Docker** · **Day 2 — GitHub Actions CI** · **Day 3 — Registry + CD** · **Day 5 — Ansible Automation**  
+> FastAPI · PostgreSQL · Docker · Docker Compose · pytest · flake8 · GHCR · Trivy · Ansible · kubectl · Helm
 
 ---
 
@@ -200,4 +200,62 @@ docker pull ghcr.io/<YOUR_USERNAME>/quickops/backend:sha-<COMMIT_SHA>
 # Run image
 docker run -d -p 8000:8000 ghcr.io/<YOUR_USERNAME>/quickops/backend:sha-<COMMIT_SHA>
 ```
+
+---
+
+## Day 5 — Ansible Infrastructure Automation
+
+Automated server configuration, Docker CE container runtime installation, user management, and Kubernetes client toolchain provisioning with verified idempotency.
+
+### Project Structure (Day 5 additions)
+
+```
+QuickOPS/
+└── ansible/
+    ├── ansible.cfg             ← Ansible global configuration (roles, inventory, SSH defaults)
+    ├── inventory.ini           ← Inventory for remote nodes and local Docker test node
+    ├── site.yml                ← Master playbook
+    ├── vault.example.yml       ← Template for Ansible Vault encrypted secrets
+    ├── group_vars/
+    │   └── all.yml             ← Global variables & environment variable fallbacks
+    └── roles/
+        ├── common/             ← OS updates, sysctl networking, devops user & sudoers
+        ├── docker/             ← Docker CE, containerd, Compose/Buildx plugins, daemon.json
+        └── k8s_tools/          ← kubectl, helm client dependencies
+```
+
+### Key Highlights
+1. **Modular Roles**: Split into `common` (base utils & users), `docker` (engine & compose), and `k8s_tools` (`kubectl`, `helm`).
+2. **Local & Remote Dual-Target**: Run against local Docker container (`quickops-node`) or remote SSH servers with the same playbook.
+3. **Secret Security**: Zero plaintext secrets in Git. Supports environment variables (`QUICKOPS_*`) or Ansible Vault (`vault.yml`).
+4. **Verified Idempotency**: Second run yields `changed=0`, ensuring consistent, safe re-runs across fleet.
+
+### Quick Start (Local Verification)
+
+```bash
+# 1 — Start local test node
+docker run -d --name quickops-node --privileged ubuntu:24.04 sleep infinity
+
+# 2 — Run playbook (Run #1: Provisions server)
+ansible-playbook -i ansible/inventory.ini ansible/site.yml
+
+# 3 — Verify Idempotency (Run #2: 0 changes, 0 failures)
+ansible-playbook -i ansible/inventory.ini ansible/site.yml
+
+# 4 — Verify installed tools inside target node
+docker exec -it quickops-node bash -c "docker --version && docker compose version && kubectl version --client && helm version --short && id devops"
+```
+
+### Secrets Management with Ansible Vault
+
+```bash
+# Create an encrypted secrets file
+ansible-vault create ansible/group_vars/vault.yml
+
+# Run playbook with vault prompt
+ansible-playbook -i ansible/inventory.ini ansible/site.yml --ask-vault-pass
+```
+
+See [docs/ansible-architecture.md](docs/ansible-architecture.md) for full architecture specifications and remote deployment runbooks.
+
 

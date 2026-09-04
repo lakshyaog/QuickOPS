@@ -1,0 +1,11 @@
+---
+# ==============================================================================
+# Handlers for docker role
+# ==============================================================================
+
+- name: restart docker
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+  when: ansible_virtualization_type is not defined or ansible_virtualization_type != 'docker'
+  failed_when: false

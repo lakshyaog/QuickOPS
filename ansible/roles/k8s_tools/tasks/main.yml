@@ -1,0 +1,89 @@
+---
+# ==============================================================================
+# Role: k8s_tools
+# Installs Kubernetes client tooling (kubectl, helm) with verified idempotency.
+# ==============================================================================
+
+- name: Determine architecture identifier
+  ansible.builtin.set_fact:
+    k8s_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else 'arm64' if ansible_facts['architecture'] == 'aarch64' else ansible_facts['architecture'] }}"
+
+- name: Check if kubectl is already installed
+  ansible.builtin.command: kubectl version --client --output=json
+  register: kubectl_check
+  changed_when: false
+  failed_when: false
+
+- name: Download and install kubectl binary
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/{{ k8s_arch }}/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+    owner: root
+    group: root
+    timeout: 120
+  register: kubectl_dl
+  until: kubectl_dl is success
+  retries: 3
+  delay: 2
+  when: kubectl_check.rc != 0 or kubectl_version not in kubectl_check.stdout
+
+- name: Check if Helm is already installed
+  ansible.builtin.command: helm version --template='{{ '{{' }} .Version {{ '}}' }}'
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Download Helm release archive
+  ansible.builtin.get_url:
+    url: "https://get.helm.sh/helm-{{ helm_version }}-linux-{{ k8s_arch }}.tar.gz"
+    dest: "/tmp/helm-{{ helm_version }}.tar.gz"
+    mode: '0644'
+    timeout: 120
+  register: helm_dl
+  until: helm_dl is success
+  retries: 3
+  delay: 2
+  when: helm_check.rc != 0 or helm_check.stdout != helm_version
+
+- name: Extract Helm binary
+  ansible.builtin.unarchive:
+    src: "/tmp/helm-{{ helm_version }}.tar.gz"
+    dest: /tmp
+    remote_src: yes
+  when: helm_check.rc != 0 or helm_check.stdout != helm_version
+
+- name: Install Helm binary to /usr/local/bin
+  ansible.builtin.copy:
+    src: "/tmp/linux-{{ k8s_arch }}/helm"
+    dest: /usr/local/bin/helm
+    mode: '0755'
+    owner: root
+    group: root
+    remote_src: yes
+  when: helm_check.rc != 0 or helm_check.stdout != helm_version
+
+- name: Clean up temporary Helm files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/tmp/helm-{{ helm_version }}.tar.gz"
+    - "/tmp/linux-{{ k8s_arch }}"
+  when: helm_check.rc != 0 or helm_check.stdout != helm_version
+
+- name: Verify installed kubectl version
+  ansible.builtin.command: kubectl version --client
+  register: final_kubectl
+  changed_when: false
+
+- name: Verify installed Helm version
+  ansible.builtin.command: helm version --short
+  register: final_helm
+  changed_when: false
+
+- name: Display Kubernetes tools summary
+  ansible.builtin.debug:
+    msg:
+      - "kubectl: {{ final_kubectl.stdout | default('verified') }}"
+      - "helm: {{ final_helm.stdout | default('verified') }}"

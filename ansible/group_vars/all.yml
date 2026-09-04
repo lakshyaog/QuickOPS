@@ -1,0 +1,37 @@
+---
+# ==============================================================================
+# Global Configuration Variables for QuickOPS Infrastructure
+# ==============================================================================
+
+# User & Access Management
+devops_user: "{{ lookup('env', 'QUICKOPS_DEVOPS_USER') | default('devops', true) }}"
+devops_uid: 1001
+devops_shell: /bin/bash
+devops_groups:
+  - sudo
+  - docker
+devops_sudo_nopasswd: true
+
+# SSH public key for devops user (read from env or empty)
+devops_ssh_public_key: "{{ lookup('env', 'QUICKOPS_SSH_PUBLIC_KEY') | default('', true) }}"
+
+# Server time & kernel sysctl settings (required for K8s & container networking)
+system_timezone: "UTC"
+sysctl_settings:
+  net.ipv4.ip_forward: 1
+  net.bridge.bridge-nf-call-iptables: 1
+  net.bridge.bridge-nf-call-ip6tables: 1
+
+# Docker Daemon Configuration (systemd cgroup driver is essential for K8s)
+docker_daemon_config:
+  exec-opts:
+    - "native.cgroupdriver=systemd"
+  log-driver: "json-file"
+  log-opts:
+    max-size: "50m"
+    max-file: "3"
+  storage-driver: "overlay2"
+
+# Kubernetes & Client Tools Configuration
+kubectl_version: "{{ lookup('env', 'KUBECTL_VERSION') | default('v1.31.0', true) }}"
+helm_version: "{{ lookup('env', 'HELM_VERSION') | default('v3.16.2', true) }}"

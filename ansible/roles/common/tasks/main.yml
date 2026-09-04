@@ -1,0 +1,91 @@
+---
+# ==============================================================================
+# Role: common
+# Automates package updates, base utilities, sysctl parameters, and user setup.
+# ==============================================================================
+
+- name: Update apt package cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install prerequisite base packages
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - python3-debian
+      - git
+      - jq
+      - sudo
+      - tar
+      - gzip
+      - procps
+      - iproute2
+    state: present
+
+- name: Ensure sysctl configuration directory exists
+  ansible.builtin.file:
+    path: /etc/sysctl.d
+    state: directory
+    mode: '0755'
+
+- name: Configure kernel sysctl settings for container & Kubernetes networking
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+    content: |
+      # Managed by Ansible - QuickOPS
+      net.ipv4.ip_forward = 1
+      net.bridge.bridge-nf-call-iptables = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+    mode: '0644'
+
+- name: Apply sysctl settings to running kernel (non-container hosts)
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value | string }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+  loop: "{{ sysctl_settings | dict2items }}"
+  when: ansible_facts['virtualization_type'] is not defined or ansible_facts['virtualization_type'] != 'docker'
+  failed_when: false
+
+- name: Ensure required administrative groups exist
+  ansible.builtin.group:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - sudo
+    - docker
+
+- name: Create administrative devops user
+  ansible.builtin.user:
+    name: "{{ devops_user }}"
+    uid: "{{ devops_uid }}"
+    shell: "{{ devops_shell }}"
+    groups: "{{ devops_groups }}"
+    append: yes
+    state: present
+    create_home: yes
+
+- name: Configure passwordless sudo for devops user
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/90-devops-user
+    line: "{{ devops_user }} ALL=(ALL) NOPASSWD:ALL"
+    state: present
+    create: yes
+    mode: '0440'
+    validate: 'visudo -cf %s'
+  when: devops_sudo_nopasswd | bool
+
+- name: Add authorized SSH public key for devops user
+  ansible.posix.authorized_key:
+    user: "{{ devops_user }}"
+    key: "{{ devops_ssh_public_key }}"
+    state: present
+  when: devops_ssh_public_key | default('', true) | length > 0

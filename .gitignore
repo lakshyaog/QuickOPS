@@ -37,3 +37,11 @@ htmlcov/
 .DS_Store
 .vscode/
 .idea/
+
+# Ansible
+ansible/.venv/
+ansible/*.retry
+ansible/.vault_password*
+ansible/*vault_pass*
+ansible/vault_pass.txt
+

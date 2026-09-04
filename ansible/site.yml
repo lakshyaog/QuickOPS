@@ -1,0 +1,28 @@
+---
+# ==============================================================================
+# QuickOPS Master Site Playbook
+# Automates package updates, server config, Docker installation, and K8s tooling.
+# ==============================================================================
+
+- name: Provision QuickOPS Infrastructure Nodes
+  hosts: k8s_nodes
+  gather_facts: false
+  become: true
+
+  pre_tasks:
+    - name: Bootstrap Python 3 on minimal target nodes
+      ansible.builtin.raw: test -e /usr/bin/python3 || (apt-get update && apt-get install -y python3 python3-apt)
+      changed_when: false
+
+    - name: Gather facts after Python bootstrap
+      ansible.builtin.setup:
+
+  roles:
+    - role: common
+      tags: [common, base, security]
+
+    - role: docker
+      tags: [docker, container-runtime]
+
+    - role: k8s_tools
+      tags: [k8s, kubernetes, tools]

@@ -1,0 +1,24 @@
+---
+# ==============================================================================
+# Ansible Vault Secrets Example
+#
+# DO NOT COMMIT PLAINTEXT SECRETS TO GIT.
+#
+# To create an encrypted vault file:
+#   ansible-vault create ansible/group_vars/vault.yml
+#
+# To encrypt an existing file:
+#   ansible-vault encrypt ansible/group_vars/vault.yml
+#
+# To edit an encrypted file:
+#   ansible-vault edit ansible/group_vars/vault.yml
+#
+# To execute a playbook using the vault:
+#   ansible-playbook -i inventory.ini site.yml --ask-vault-pass
+#   OR
+#   ansible-playbook -i inventory.ini site.yml --vault-password-file .vault_password
+# ==============================================================================
+
+vault_devops_password_hash: "$6$rounds=656000$saltstring$hashedpasswordhere"
+vault_ghcr_token: "ghp_exampleTokenForRegistryPullAndPush"
+vault_database_password: "supersecretpostgrespassword"
