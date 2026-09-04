@@ -114,24 +114,30 @@ jobs:
           tags: quickops-backend:local-scan
           cache-from: type=gha
 
+      - name: Install Trivy CLI
+        run: |
+          curl -sSL -O "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-64bit.deb"
+          sudo dpkg -i trivy_0.74.0_Linux-64bit.deb
+          rm trivy_0.74.0_Linux-64bit.deb
+
       - name: Run Trivy vulnerability scanner (Table output)
-        uses: aquasecurity/trivy-action@v0.28.0
-        with:
-          image-ref: quickops-backend:local-scan
-          format: 'table'
-          exit-code: '0'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+        run: |
+          trivy image \
+            --format table \
+            --exit-code 0 \
+            --ignore-unfixed \
+            --pkg-types os,library \
+            --severity CRITICAL,HIGH \
+            quickops-backend:local-scan
 
       - name: Run Trivy vulnerability scanner (SARIF output)
-        uses: aquasecurity/trivy-action@v0.28.0
         if: always()
-        with:
-          image-ref: quickops-backend:local-scan
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-results.sarif \
+            --severity CRITICAL,HIGH \
+            quickops-backend:local-scan
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3

@@ -69,7 +69,7 @@ Container security scanning is executed before any image is published to GHCR.
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-- **Scanner**: [Trivy](https://github.com/aquasecurity/trivy) by Aqua Security (`aquasecurity/trivy-action`).
+- **Scanner**: [Trivy](https://github.com/aquasecurity/trivy) CLI (installed directly from official GitHub releases, avoiding third-party action wrapper dependencies).
 - **Scan Targets**: Both OS packages (Alpine/Debian) and application libraries (`pip` dependencies).
 - **Severity Levels**: Flags `HIGH` and `CRITICAL` vulnerabilities.
 - **Reporting**:
